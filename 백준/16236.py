@@ -19,7 +19,9 @@ size = 2
 eat_count = 0
 can_eat = []
 result = 0
-min_dist = 401
+#상어의 현재 위치
+x_origin = 0
+y_origin = 0
 
 
 dx = [0, 0, 1, -1]
@@ -31,9 +33,19 @@ for x in range(N):
     a = list(map(int, input().split()))
     if 9 in a:
         queue.append((x, a.index(9)))
+        x_origin = x
+        y_origin = a.index(9)
         #아기상어의 초기 위치의 시간은 0. 
         board_time[x][a.index(9)] = 0
     board.append(a)
+
+
+def init():
+    global board_time, can_eat, x_origin, y_origin, queue
+    queue.append((x_origin, y_origin))
+    board_time = [[-1 for i in range(N)] for j in range(N)]
+    board_time[x_origin][y_origin] = 0
+    can_eat = []  
 
 while True:
     while queue:
@@ -55,18 +67,25 @@ while True:
                 continue
 
             #먹이가 있을 경우
-            if board[x][y] != 0:
-                dist = (abs(curr_pos[0] - x), abs(curr_pos[1] - y))
+            if board[x][y] != 0 and board[x][y] < size:
+                dist = abs(x_origin - x) + abs(y_origin - y)
                 can_eat.append((x, y, dist))
 
             queue.append((x, y))
             board_time[x][y] = board_time[curr_pos[0]][curr_pos[1]] + 1
-    
+
     if len(can_eat) == 0:
         print(result)
         break
         
     else:
-        result += board_time[]
-        
-
+        prey = sorted(can_eat, key = lambda x: (x[2], x[0], x[1]))[0]
+        board[prey[0]][prey[1]] = 0
+        result += board_time[prey[0]][prey[1]]
+        eat_count += 1
+        if eat_count == size:
+            size += 1
+            eat_count = 0
+        x_origin = prey[0]
+        y_origin = prey[1]
+        init()
