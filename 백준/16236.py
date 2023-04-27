@@ -1,13 +1,6 @@
-#https://www.acmicpc.net/problem/16236
-
-'''
-먹을 수 있는 물고기가 1마리라면, 그 물고기를 먹으러 간다.
-먹을 수 있는 물고기가 1마리보다 많다면, 거리가 가장 가까운 물고기를 먹으러 간다.
-거리는 아기 상어가 있는 칸에서 물고기가 있는 칸으로 이동할 때, 지나야하는 칸의 개수의 최솟값이다.
-거리가 가까운 물고기가 많다면, 가장 위에 있는 물고기, 그러한 물고기가 여러마리라면, 가장 왼쪽에 있는 물고기를 먹는다.
-'''
-
-#일단 먹을 수 있는 물고기를 찾고, 있다면 그때 시간을 더해야 할 듯
+#dist = abs(x_origin - x) + abs(y_origin - y)
+#prey = sorted(can_eat, key = lambda x: (x[2], x[0], x[1]))[0]
+#거리계산을 이렇게 해버리면 원래의 위치에서 지나야할 칸을 고려하지 못함.
 
 from collections import deque
 
@@ -15,14 +8,20 @@ N = int(input())
 board = []
 #각 좌표의 시간 저장
 board_time = [[-1 for i in range(N)] for j in range(N)]
+
 size = 2
 eat_count = 0
-can_eat = []
 result = 0
+
 #상어의 현재 위치
 x_origin = 0
 y_origin = 0
 
+max_xy = 20
+min_x = max_xy
+min_y = max_xy
+
+min_dist = 401
 
 dx = [0, 0, 1, -1]
 dy = [1, -1, 0, 0]
@@ -32,22 +31,22 @@ queue = deque([])
 for x in range(N):
     a = list(map(int, input().split()))
     if 9 in a:
-        queue.append((x, a.index(9)))
         x_origin = x
         y_origin = a.index(9)
-        #아기상어의 초기 위치의 시간은 0. 
-        board_time[x][a.index(9)] = 0
+        #아기상어의 초기 위치의 시간은 0.
+        board_time[x_origin][y_origin] = 0
     board.append(a)
 
-
 def init():
-    global board_time, can_eat, x_origin, y_origin, queue
-    queue.append((x_origin, y_origin))
+    global board_time, min_x, min_y, min_dist, max_xy
     board_time = [[-1 for i in range(N)] for j in range(N)]
-    board_time[x_origin][y_origin] = 0
-    can_eat = []  
+    min_x = max_xy
+    min_y = max_xy
+    min_dist = 401
 
 while True:
+    queue.append((x_origin, y_origin))
+    board_time[x_origin][y_origin] = 0
     while queue:
         curr_pos = queue.popleft()
         for i in range(4):
@@ -65,27 +64,44 @@ while True:
             #이미 방문했다면 넘어간다.
             if board_time[x][y] != -1:
                 continue
-
+                
+            board_time[x][y] = board_time[curr_pos[0]][curr_pos[1]] + 1
+            
             #먹이가 있을 경우
             if board[x][y] != 0 and board[x][y] < size:
-                dist = abs(x_origin - x) + abs(y_origin - y)
-                can_eat.append((x, y, dist))
-
+                #지금 거리 계산이 제대로 되지 않고 있음.
+                #어차피 모든 간선이동은 코스트가 1이므로 이동시간을 거리로 칠 수 있다.
+                #지금까지의 거리보다 더 짧은 거리의 먹이일 경우
+                if min_dist > board_time[x][y]:
+                    min_x = x
+                    min_y = y
+                    min_dist = board_time[x][y]
+                #거리가 같을 경우, 즉 여러 마리의 먹이가 있을 경우 가장 위의 가장 왼쪽을 찾는다.
+                elif min_dist == board_time[x][y]:
+                    if min_x == x:
+                        if min_y > y:
+                            min_x = x
+                            min_y = y
+                    elif min_x > x:
+                        min_x = x
+                        min_y = y
+            
             queue.append((x, y))
-            board_time[x][y] = board_time[curr_pos[0]][curr_pos[1]] + 1
-
-    if len(can_eat) == 0:
-        print(result)
-        break
-        
-    else:
-        prey = sorted(can_eat, key = lambda x: (x[2], x[0], x[1]))[0]
-        board[prey[0]][prey[1]] = 0
-        result += board_time[prey[0]][prey[1]]
+            
+            
+    #먹이를 찾은 경우
+    if min_x != max_xy and min_y != max_xy:
+        board[min_x][min_y] = 0
+        result += board_time[min_x][min_y]
         eat_count += 1
         if eat_count == size:
             size += 1
             eat_count = 0
-        x_origin = prey[0]
-        y_origin = prey[1]
+        #아기 상어 이동
+        board[x_origin][y_origin] = 0
+        x_origin = min_x
+        y_origin = min_y
         init()
+    else:
+        print(result)
+        break
